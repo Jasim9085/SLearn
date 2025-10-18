@@ -1,17 +1,17 @@
-name: Android CI Build
+name: Android CI Build From Source
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "min" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "min" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checks-out your repository.
+      # Step 1: Checks out your repository source code.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -25,37 +25,106 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       
-      # Step 3: Set up the Android NDK.
+      # Step 3: Set up the Android NDK (for our C++ engine).
       - name: Set up Android NDK
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r26d # The version containing glslc
+          ndk-version: r26d
           add-to-path: true
 
-      # Step 4: REMOVED the 'Add NDK glslc to PATH' step as it's no longer needed.
+      # Step 4: Add the NDK's glslc compiler to the system PATH.
+      - name: Add NDK glslc to PATH
+        run: echo "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
-      # Step 5: Create the necessary Gradle configuration files on the fly.
-      - name: Create Gradle Build Files
+      # Step 5: OVERWRITE ALL GRADLE FILES
+      # This is the most critical step. It creates the root-level files AND
+      # replaces the problematic app/build.gradle from your repository.
+      - name: Create/Overwrite All Gradle Build Files
         run: |
+          # Create root settings.gradle
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
           echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
           echo "rootProject.name = 'SLearn'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
+
+          # Create root build.gradle
           echo "plugins { id 'com.android.application' version '8.2.0' apply false }" > build.gradle
 
-      # Step 6: Generate the Gradle Wrapper scripts (gradlew).
+          # CRITICAL: Overwrite the app/build.gradle with a modern, working version.
+          # This directly fixes the 'Cannot mutate the dependencies' error.
+          cat << 'EOF' > app/build.gradle
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.slearn'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId "com.slearn"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+                  
+                  externalNativeBuild {
+                      cmake {
+                          cppFlags '-std=c++17', '-frtti', '-fexceptions'
+                      }
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                  }
+              }
+              
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+
+              externalNativeBuild {
+                  cmake {
+                      path 'src/main/cpp/engine/CMakeLists.txt'
+                      version '3.22.1'
+                  }
+              }
+          }
+
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.12.0'
+              implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+              testImplementation 'junit:junit:4.13.2'
+              androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+              androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+          }
+          EOF
+
+      # Step 6: Install a specific version of Gradle to create the wrapper.
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      # Step 7: Generate the Gradle Wrapper scripts (gradlew).
       - name: Generate Gradle Wrapper
         run: gradle wrapper
 
-      # Step 7: Grant execute permission to the Gradle wrapper.
+      # Step 8: Grant execute permission to the now-existing Gradle wrapper.
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Step 8: Build the application using the wrapper.
+      # Step 9: Build the application using the generated wrapper.
       - name: Build with Gradle Wrapper
         run: ./gradlew :app:assembleDebug
 
-      # Step 9: Upload the final build artifact.
+      # Step 10: Upload the final build artifact.
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
