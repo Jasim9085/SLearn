@@ -1,9 +1,9 @@
 name: Android CI Build with Native Engine
 on:
   push:
-    branches: [ "min" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "min" ]
+    branches: [ "main" ]
 jobs:
   build:
     runs-on: ubuntu-latest
