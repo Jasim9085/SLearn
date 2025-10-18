@@ -24,13 +24,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Install NDK
-        run: |
-          yes | sdkmanager --install "ndk;26.1.10909125"
-
-      # Step 3: REMOVED setup-ndk step. Gradle will now manage the NDK entirely.
-
-      # Step 4: OVERWRITE ALL GRADLE FILES with the final, correct configuration.
+      
+      # Step 3: OVERWRITE ALL GRADLE FILES with the final, correct configuration.
+      # Gradle's ndkVersion property will now manage the NDK entirely.
       - name: Create/Overwrite All Gradle Build Files
         run: |
           # Create root settings.gradle
@@ -52,10 +48,7 @@ jobs:
           android {
               namespace 'com.slearn'
               compileSdk 34
-
-              // CRITICAL FIX: This line tells Gradle to use NDK r26, which contains glslc.
-              ndkVersion "26.1.10909125"
-
+              ndkVersion "26.1.10909125" # This is the key change.
               defaultConfig {
                   applicationId "com.slearn"
                   minSdk 24
@@ -101,26 +94,26 @@ jobs:
           }
           EOF
 
-      # Step 5: Install a specific version of Gradle to create the wrapper.
+      # Step 4: Install a specific version of Gradle to create the wrapper.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.7'
 
-      # Step 6: Generate the Gradle Wrapper scripts (gradlew).
+      # Step 5: Generate the Gradle Wrapper scripts (gradlew).
       - name: Generate Gradle Wrapper
         run: gradle wrapper
 
-      # Step 7: Grant execute permission to the now-existing Gradle wrapper.
+      # Step 6: Grant execute permission to the now-existing Gradle wrapper.
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Step 8: Build the application using the generated wrapper.
+      # Step 7: Build the application using the generated wrapper.
       # Gradle will now automatically download NDK r26 and CMake will find glslc.
       - name: Build with Gradle Wrapper
         run: ./gradlew :app:assembleDebug
 
-      # Step 9: Upload the final build artifact.
+      # Step 8: Upload the final build artifact.
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
