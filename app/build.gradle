@@ -12,30 +12,46 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // This block links Gradle to our C++ engine's CMake file.
         externalNativeBuild {
             cmake {
-                cppFlags '-std=c++17 -frtti -fexceptions'
+                // Defines arguments passed to CMake during the build.
+                // -frtti and -fexceptions are required for our C++ code.
+                cppFlags '-std=c++17', '-frtti', '-fexceptions'
             }
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    // This block tells Gradle where to find our C++ project's main CMakeLists.txt
     externalNativeBuild {
         cmake {
             path 'src/main/cpp/engine/CMakeLists.txt'
+            // This should match a version available in the Android SDK
         }
     }
 }
 
 dependencies {
+    // Standard dependencies for a basic Android app
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
