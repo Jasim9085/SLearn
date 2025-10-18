@@ -24,7 +24,10 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      
+      - name: Install NDK
+        run: |
+          yes | sdkmanager --install "ndk;26.1.10909125"
+
       # Step 3: REMOVED setup-ndk step. Gradle will now manage the NDK entirely.
 
       # Step 4: OVERWRITE ALL GRADLE FILES with the final, correct configuration.
