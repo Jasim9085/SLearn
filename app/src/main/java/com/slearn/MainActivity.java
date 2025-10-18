@@ -14,9 +14,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private NativeEngine nativeEngine;
+    private GenerationController generationController;
     private long conversationHandle = 0;
 
-    // UI Elements
     private TextView logTextView;
     private EditText promptEditText;
     private Button sendButton;
@@ -27,39 +27,39 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // --- Initialize UI Elements ---
         logTextView = findViewById(R.id.logTextView);
         promptEditText = findViewById(R.id.promptEditText);
         sendButton = findViewById(R.id.sendButton);
         scrollView = findViewById(R.id.scrollView);
 
-        // Initially, disable the input until the model is loaded.
         promptEditText.setEnabled(false);
         sendButton.setEnabled(false);
 
-        // --- Setup Engine and Button Listener ---
         nativeEngine = new NativeEngine();
         setupSendButtonListener();
-
-        // Start the engine initialization on a background thread.
-        initializeEngine();
+        initializeSystem();
     }
 
-    private void initializeEngine() {
-        logToScreen("Initializing T760 Engine...");
+    private void initializeSystem() {
+        logToScreen("Initializing System...");
         new Thread(() -> {
-            boolean isInit = nativeEngine.nativeInit();
-            Log.d(TAG, "Engine initialization success: " + isInit);
+            try {
+                // 1. Initialize Tokenizer (must be done first)
+                // IMPORTANT: You MUST add 'vocab.json' to your app's 'src/main/assets' folder.
+                generationController = new GenerationController(getApplicationContext());
+                logToScreen("Tokenizer loaded.");
 
-            if (isInit) {
+                // 2. Initialize C++ Engine
+                boolean isInit = nativeEngine.nativeInit();
+                if (!isInit) {
+                    logToScreen("FATAL: Engine initialization FAILED.");
+                    return;
+                }
                 logToScreen("Engine Initialized. Loading model...");
 
-                // IMPORTANT: You must copy your model.t760 file to a location accessible
-                // by the app, such as the internal storage, for this to work.
+                // 3. Load Model
                 String modelPath = getFilesDir().getAbsolutePath() + "/model.t760";
-                
                 boolean isLoaded = nativeEngine.nativeLoadModel(modelPath);
-                Log.d(TAG, "Model loading success: " + isLoaded);
 
                 if (isLoaded) {
                     conversationHandle = nativeEngine.nativeStartConversation();
@@ -71,8 +71,9 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     logToScreen("ERROR: Model loading FAILED.");
                 }
-            } else {
-                logToScreen("FATAL: Engine initialization FAILED.");
+            } catch (Exception e) {
+                Log.e(TAG, "Initialization failed", e);
+                logToScreen("FATAL: Initialization failed: " + e.getMessage());
             }
         }).start();
     }
@@ -80,34 +81,49 @@ public class MainActivity extends AppCompatActivity {
     private void setupSendButtonListener() {
         sendButton.setOnClickListener(v -> {
             String prompt = promptEditText.getText().toString();
-            if (prompt.isEmpty() || conversationHandle == 0) {
+            if (prompt.isEmpty() || conversationHandle == 0 || generationController == null) {
                 return;
             }
 
             logToScreen("\n\n> " + prompt);
-            promptEditText.setText(""); // Clear the input field
+            promptEditText.setText("");
+            promptEditText.setEnabled(false); // Disable input during generation
+            sendButton.setEnabled(false);
 
-            // This is a placeholder for your actual tokenizer.
-            // You would replace this with a call to your tokenization logic.
-            int[] tokenIds = {1, 2, 3}; // Dummy token IDs from prompt
-
-            // Run inference on a background thread.
             new Thread(() -> {
-                int[] resultTokenIds = nativeEngine.nativeGenerate(conversationHandle, tokenIds);
+                // 1. Tokenize the user's prompt using our Java controller.
+                int[] tokenIds = generationController.tokenize(prompt);
+
+                // 2. Start the generation loop, which is managed by the Java controller.
+                // The controller will call the C++ engine repeatedly.
+                generationController.generate(
+                    nativeEngine,
+                    conversationHandle,
+                    tokenIds,
+                    100, // Max new tokens to generate
+                    this::streamToScreen // Callback function to handle each generated token
+                );
                 
-                // This is a placeholder for de-tokenization.
-                // You would convert the resultTokenIds back into a string.
-                String resultText = "This is a generated response."; // Dummy response
-                
-                logToScreen("\n" + resultText);
+                // Re-enable UI after generation is complete
+                runOnUiThread(() -> {
+                    promptEditText.setEnabled(true);
+                    sendButton.setEnabled(true);
+                });
             }).start();
+        });
+    }
+
+    // This method is called by the controller for each new token.
+    private void streamToScreen(final String token) {
+        runOnUiThread(() -> {
+            logTextView.append(token.replace(" ", " ")); // Post-process token string if needed
+            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         });
     }
 
     private void logToScreen(final String message) {
         runOnUiThread(() -> {
             logTextView.append(message + "\n");
-            // Auto-scroll to the bottom
             scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         });
     }
