@@ -1,4 +1,4 @@
-name: Android CI Build From Source
+name: Android CI Build
 
 on:
   push:
@@ -11,8 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checks out your repository source code.
-      # The runner's working directory is now the root of your project.
+      # Step 1: Checks-out your repository.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -26,24 +25,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       
-      # Step 3: Set up the Android NDK (for our C++ engine).
+      # Step 3: Set up the Android NDK.
       - name: Set up Android NDK
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r26d
+          ndk-version: r26d # The version containing glslc
           add-to-path: true
 
-      # Step 4: Add the NDK's glslc compiler to the system PATH.
-      - name: Add NDK glslc to PATH
-        run: echo "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+      # Step 4: REMOVED the 'Add NDK glslc to PATH' step as it's no longer needed.
 
-      # Step 5: Install a specific version of Gradle.
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
-
-      # Step 6: Create the necessary Gradle configuration files in the root directory.
+      # Step 5: Create the necessary Gradle configuration files on the fly.
       - name: Create Gradle Build Files
         run: |
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
@@ -52,20 +43,19 @@ jobs:
           echo "include ':app'" >> settings.gradle
           echo "plugins { id 'com.android.application' version '8.2.0' apply false }" > build.gradle
 
-      # Step 7: Generate the Gradle Wrapper scripts (gradlew) in the root directory.
+      # Step 6: Generate the Gradle Wrapper scripts (gradlew).
       - name: Generate Gradle Wrapper
         run: gradle wrapper
 
-      # Step 8: Grant execute permission to the now-existing Gradle wrapper.
+      # Step 7: Grant execute permission to the Gradle wrapper.
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Step 9: Build the application using the generated wrapper.
+      # Step 8: Build the application using the wrapper.
       - name: Build with Gradle Wrapper
         run: ./gradlew :app:assembleDebug
 
-      # Step 10: Upload the final build artifact.
-      # The path is now correct and relative to the root of the workspace.
+      # Step 9: Upload the final build artifact.
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
