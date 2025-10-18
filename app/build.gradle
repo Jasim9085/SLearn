@@ -1,3 +1,5 @@
+// SLearn/app/build.gradle (Complete and Final Version)
+
 plugins {
     id 'com.android.application'
 }
@@ -19,7 +21,7 @@ android {
         externalNativeBuild {
             cmake {
                 // Defines arguments passed to CMake during the build.
-                // -frtti and -fexceptions are required for our C++ code.
+                // -frtti and -fexceptions are required for our C++ code's dynamic_cast and try/catch.
                 cppFlags '-std=c++17', '-frtti', '-fexceptions'
             }
         }
@@ -37,17 +39,17 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    // This block tells Gradle where to find our C++ project's main CMakeLists.txt
+    // This block tells Gradle where to find our C++ project's main CMakeLists.txt file.
     externalNativeBuild {
         cmake {
             path 'src/main/cpp/engine/CMakeLists.txt'
-            // This should match a version available in the Android SDK
+            version '3.22.1' // This should match a version available in the Android SDK
         }
     }
 }
 
 dependencies {
-    // Standard dependencies for a basic Android app
+    // Standard dependencies for a basic Android app.
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
