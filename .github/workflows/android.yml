@@ -12,6 +12,7 @@ jobs:
 
     steps:
       # Step 1: Checks out your repository source code.
+      # The runner's working directory is now the root of your project.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -42,39 +43,31 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      # Step 6: Create the necessary Gradle configuration files on the fly.
-      # This is the critical step that follows your instructions.
+      # Step 6: Create the necessary Gradle configuration files in the root directory.
       - name: Create Gradle Build Files
-        working-directory: ./SLearn
         run: |
-          # Create settings.gradle
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
           echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
           echo "rootProject.name = 'SLearn'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
-
-          # Create top-level build.gradle
           echo "plugins { id 'com.android.application' version '8.2.0' apply false }" > build.gradle
 
-      # Step 7: Generate the Gradle Wrapper scripts (gradlew).
-      # This command reads the new settings.gradle and creates the gradlew files.
+      # Step 7: Generate the Gradle Wrapper scripts (gradlew) in the root directory.
       - name: Generate Gradle Wrapper
-        working-directory: ./SLearn
         run: gradle wrapper
 
       # Step 8: Grant execute permission to the now-existing Gradle wrapper.
       - name: Make gradlew executable
-        working-directory: ./SLearn
         run: chmod +x ./gradlew
 
       # Step 9: Build the application using the generated wrapper.
       - name: Build with Gradle Wrapper
-        working-directory: ./SLearn
         run: ./gradlew :app:assembleDebug
 
       # Step 10: Upload the final build artifact.
+      # The path is now correct and relative to the root of the workspace.
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
-          path: SLearn/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
