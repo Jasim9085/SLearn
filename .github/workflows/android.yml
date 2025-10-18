@@ -48,7 +48,7 @@ jobs:
           android {
               namespace 'com.slearn'
               compileSdk 34
-              ndkVersion "26.1.10909125" # This is the key change.
+              ndkVersion "26.1.10909125"
               defaultConfig {
                   applicationId "com.slearn"
                   minSdk 24
