@@ -1,0 +1,72 @@
+# Name of your workflow
+name: Android CI Build with Native Engine
+
+# Controls when the workflow will run
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checks-out your repository, including your C++ engine source.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Required to get third-party libraries like Eigen if they are submodules
+          submodules: 'recursive'
+
+      # Step 2: Set up the Java Development Kit (JDK)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Step 3: Set up the Android NDK (CRITICAL FOR C++ ENGINE)
+      # This step installs the NDK which provides the compilers and headers
+      # for Vulkan, NNAPI, JNI, and other native libraries.
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d # A recent, stable version of the NDK
+          add-to-path: true
+
+      # Step 4: Set up the Vulkan SDK (CRITICAL FOR SHADER COMPILATION)
+      # This step installs the 'glslc' compiler needed by our CMake script
+      # to compile .comp shaders into .spv binaries.
+      - name: Set up Vulkan SDK
+        uses: j-j0/setup-vulkan@v3
+        with:
+          vulkan-query-version: 1.3.204
+          vulkan-components: 'glslc'
+
+      # Step 5: Install a specific version of Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      # Step 6: Grant execute permission to the Gradle wrapper
+      # This is a common CI step to ensure the gradlew script can be run.
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # Step 7: Compile the app, including the C++ engine
+      # The Gradle wrapper will automatically invoke CMake, which now has access
+      # to the NDK and Vulkan SDK tools we installed in previous steps.
+      - name: Build with Gradle
+        run: ./gradlew :app:assembleDebug
+
+      # Step 8: Upload the build artifact (the final APK)
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          # The path points to the standard output location for a debug APK.
+          path: app/build/outputs/apk/debug/app-debug.apk

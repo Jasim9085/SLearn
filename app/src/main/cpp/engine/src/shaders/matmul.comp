@@ -1,0 +1,46 @@
+#version 450
+
+// This shader is executed by many threads in parallel.
+// We define a "workgroup" of 16x16 = 256 threads.
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+// Define the memory layout for our input and output tensors.
+// These bindings match what our C++ orchestrator will set up.
+layout(binding = 0, std430) readonly buffer MatrixA {
+    float A[];
+};
+layout(binding = 1, std430) readonly buffer MatrixB {
+    float B[];
+};
+layout(binding = 2, std430) writeonly buffer MatrixC {
+    float C[];
+};
+
+// Uniforms are constant parameters passed from the C++ side.
+layout(binding = 3, std140) uniform UBO {
+    int M;
+    int N;
+    int K;
+} dims;
+
+// The main function executed by each GPU thread.
+void main() {
+    // Get the unique global (x, y) coordinate of this thread.
+    // This corresponds to the (column, row) of the output matrix C.
+    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
+
+    // Boundary check: If this thread is outside the actual matrix dimensions,
+    // it does nothing. This handles matrices that are not a multiple of our workgroup size.
+    if (gid.x >= dims.N || gid.y >= dims.M) {
+        return;
+    }
+
+    float sum = 0.0;
+    for (int i = 0; i < dims.K; ++i) {
+        // A[row][i] * B[i][col]
+        sum += A[gid.y * dims.K + i] * B[i * dims.N + gid.x];
+    }
+
+    // Write the final computed value to the output buffer.
+    C[gid.y * dims.N + gid.x] = sum;
+}
