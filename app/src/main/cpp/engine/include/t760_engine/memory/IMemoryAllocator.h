@@ -1,26 +1,30 @@
-#ifndef T760_IPLATFORM_BACKEND_H
-#define T760_IPLATFORM_BACKEND_H
+#ifndef T760_IMEMORY_ALLOCATOR_H
+#define T760_IMEMORY_ALLOCATOR_H
 
-#include "t760_engine/platform/IGpuContext.h"
-#include "t760_engine/platform/INpuContext.h"
-#include "t760_engine/memory/IMemoryAllocator.h" // CORRECTED: Use the single, correct interface
-#include "t760_engine/device/DeviceManager.h"
+#include "t760_engine/memory/MemoryTypes.h"
 #include <memory>
 
 namespace t760 {
 
-class IPlatformBackend {
+// This is the single, abstract base class for all device-specific memory allocators.
+// It defines the contract for how memory is allocated for a specific hardware device.
+class IMemoryAllocator {
 public:
-    virtual ~IPlatformBackend() = default;
+    virtual ~IMemoryAllocator() = default;
 
-    virtual void initialize(const DeviceManager& device_manager) = 0;
+    // Initializes the allocator, preparing any necessary device contexts.
+    virtual void initialize() = 0;
+
+    // Shuts down the allocator, releasing all associated resources.
     virtual void shutdown() = 0;
 
-    virtual IGpuContext* get_gpu_context() const = 0;
-    virtual INpuContext* get_npu_context() const = 0;
-    virtual IMemoryAllocator* get_cpu_allocator() const = 0;
+    // The core allocation method.
+    // It must return a unique_ptr to a Buffer, which contains a deallocator
+    // lambda, ensuring that memory is automatically and correctly freed when the Buffer
+    // goes out of scope (RAII).
+    virtual std::unique_ptr<Buffer> allocate(size_t size, MemoryUsage usage) = 0;
 };
 
 }
 
-#endif // T760_IPLATFORM_BACKEND_H
+#endif // T760_IMEMORY_ALLOCATOR_H
