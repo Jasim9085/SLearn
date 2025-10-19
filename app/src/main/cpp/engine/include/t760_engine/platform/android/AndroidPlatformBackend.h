@@ -17,7 +17,6 @@ public:
     void initialize(const DeviceManager& device_manager) override;
     void shutdown() override;
 
-    // FIX: All getter methods are now const
     IGpuContext* get_gpu_context() const override;
     INpuContext* get_npu_context() const override;
     IPlatformMemory* get_cpu_allocator() const override;
