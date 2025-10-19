@@ -2,11 +2,14 @@
 #define T760_ANDROID_GPU_CONTEXT_H
 
 #include "t760_engine/platform/IGpuContext.h"
-#include "t760_engine/platform/android/VulkanPlatformMemory.h"
 #include <vulkan/vulkan.h>
 #include <memory>
 
 namespace t760 {
+
+// FORWARD DECLARATION: This class needs to know about VulkanPlatformMemory
+// but we don't include the full header here to keep this file clean.
+class VulkanPlatformMemory;
 
 class AndroidGpuContext : public IGpuContext {
 public:
@@ -19,7 +22,9 @@ public:
     bool initialize(const GpuCapabilities& caps) override;
     void shutdown() override;
 
-    IPlatformMemory* get_allocator() override;
+    // CORRECTED: The return type must be IMemoryAllocator as defined in the interface.
+    IMemoryAllocator* get_allocator() override;
+
     void* get_command_queue() override;
     void* get_native_device() override;
 
@@ -37,6 +42,6 @@ private:
     std::unique_ptr<VulkanPlatformMemory> memory_allocator_;
 };
 
-}
+} // namespace t760
 
 #endif // T760_ANDROID_GPU_CONTEXT_H
