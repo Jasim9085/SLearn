@@ -12,6 +12,7 @@ Model::~Model() = default;
 
 const ModelConfig& Model::get_config() const { return *config_; }
 const std::vector<Tensor*>& Model::get_tensors_by_exec_order() const { return execution_ordered_tensors_; }
+
 Tensor* Model::get_tensor(const std::string& name) {
     auto it = tensor_map_.find(name);
     return (it != tensor_map_.end()) ? it->second : nullptr;
@@ -35,4 +36,4 @@ void Model::assign_tensors(std::vector<std::unique_ptr<Tensor>> tensors) {
     }
 }
 
-} // FIX: Removed the extra closing brace that was here.
+}
