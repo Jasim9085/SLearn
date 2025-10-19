@@ -6,19 +6,27 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(third_party/eigen)
 
-# --- Shader Compilation Setup (THE FINAL, CORRECT PATH) ---
-# Construct the absolute path to the glslc compiler inside the NDK's shader-tools directory.
-set(GLSLC_COMPILER "${ANDROID_NDK}/shader-tools/glslc")
+# --- Shader Compilation Setup (Resilient Method) ---
+# First, try to get the path from the environment variable set by the CI.
+set(GLSLC_COMPILER "$ENV{GLSLC_PATH}")
 
-# Check if the file at that specific path exists and is an executable.
-if(NOT EXISTS ${GLSLC_COMPILER})
-    message(FATAL_ERROR "glslc compiler not found at the expected path: ${GLSLC_COMPILER}. This path is for NDK r26+. Please check NDK integrity.")
-endif()
-if(NOT IS_EXECUTABLE ${GLSLC_COMPILER})
-     message(FATAL_ERROR "glslc compiler found but is not an executable: ${GLSLC_COMPILER}.")
+# If the environment variable is not set (e.g., local build), fall back to searching.
+if(NOT GLSLC_COMPILER)
+    find_program(GLSLC_COMPILER_FOUND
+        glslc
+        HINTS ${ANDROID_NDK}/shader-tools
+    )
+    if(GLSLC_COMPILER_FOUND)
+        set(GLSLC_COMPILER ${GLSLC_COMPILER_FOUND})
+    endif()
 endif()
 
-message(STATUS "Found glslc compiler: ${GLSLC_COMPILER}")
+# Final check. If we still don't have a compiler, fail loudly.
+if(NOT GLSLC_COMPILER OR NOT EXISTS ${GLSLC_COMPILER})
+    message(FATAL_ERROR "glslc compiler not found. Ensure GLSL_PATH env var is set or NDK is correct.")
+endif()
+
+message(STATUS "Using glslc compiler: ${GLSLC_COMPILER}")
 
 add_custom_target(Shaders)
 
@@ -41,12 +49,9 @@ endforeach()
 # --- Define the Engine Core Library ---
 add_library(t760_engine_core STATIC)
 add_dependencies(t760_engine_core Shaders)
-
 file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 target_sources(t760_engine_core PRIVATE ${ENGINE_SOURCES})
-
 target_include_directories(t760_engine_core PUBLIC include)
-
 find_package(Threads REQUIRED)
 target_link_libraries(t760_engine_core PRIVATE Threads::Threads)
 
@@ -58,13 +63,8 @@ if(ANDROID)
     find_library(nativewindow-lib nativewindow)
     find_library(vulkan-lib vulkan)
     find_library(neuralnetworks-lib neuralnetworks)
-
     target_link_libraries(t760_engine_core PRIVATE
-        ${log-lib}
-        ${android-lib}
-        ${nativewindow-lib}
-        ${vulkan-lib}
-        ${neuralnetworks-lib}
+        ${log-lib} ${android-lib} ${nativewindow-lib} ${vulkan-lib} ${neuralnetworks-lib}
     )
 endif()
 
