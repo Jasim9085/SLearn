@@ -18,37 +18,27 @@ void AndroidPlatformBackend::initialize(const DeviceManager& device_manager) {
     if (device_manager.has_device(DeviceType::CPU)) {
         cpu_allocator_ = std::make_unique<CpuAllocator>();
         cpu_allocator_->initialize();
-        std::cout << "CPU backend initialized." << std::endl;
     }
 
     if (device_manager.has_device(DeviceType::GPU)) {
-        const auto* gpu_device = device_manager.get_device(DeviceType::GPU);
-        const auto* caps = gpu_device->get_capabilities<GpuCapabilities>();
+        const auto* caps = device_manager.get_device(DeviceType::GPU)->get_capabilities<GpuCapabilities>();
         if (caps) {
             gpu_context_ = std::make_unique<AndroidGpuContext>();
             if (!gpu_context_->initialize(*caps)) {
-                std::cerr << "Warning: Failed to initialize GPU context. GPU will be unavailable." << std::endl;
                 gpu_context_.reset();
-            } else {
-                 std::cout << "GPU backend initialized." << std::endl;
             }
         }
     }
 
     if (device_manager.has_device(DeviceType::NPU)) {
-        const auto* npu_device = device_manager.get_device(DeviceType::NPU);
-        const auto* caps = npu_device->get_capabilities<NpuCapabilities>();
+        const auto* caps = device_manager.get_device(DeviceType::NPU)->get_capabilities<NpuCapabilities>();
         if (caps) {
             npu_context_ = std::make_unique<AndroidNpuContext>();
             if (!npu_context_->initialize(*caps)) {
-                std::cerr << "Warning: Failed to initialize NPU context. NPU will be unavailable." << std::endl;
                 npu_context_.reset();
-            } else {
-                std::cout << "NPU backend initialized." << std::endl;
             }
         }
     }
-    
     is_initialized_ = true;
 }
 
@@ -56,35 +46,28 @@ void AndroidPlatformBackend::shutdown() {
     if (!is_initialized_) {
         return;
     }
-    if (gpu_context_) {
-        gpu_context_->shutdown();
-        gpu_context_.reset();
-    }
-    if (npu_context_) {
-        npu_context_->shutdown();
-        npu_context_.reset();
-    }
-    if (cpu_allocator_) {
-        cpu_allocator_->shutdown();
-        cpu_allocator_.reset();
-    }
+    if (gpu_context_) gpu_context_->shutdown();
+    if (npu_context_) npu_context_->shutdown();
+    if (cpu_allocator_) cpu_allocator_->shutdown();
+    gpu_context_.reset();
+    npu_context_.reset();
+    cpu_allocator_.reset();
     is_initialized_ = false;
-    std::cout << "AndroidPlatformBackend shut down." << std::endl;
 }
 
-// CORRECTED: The return type must be explicitly cast to the base class pointer.
-IGpuContext* AndroidPlatformBackend::get_gpu_context() {
-    return static_cast<IGpuContext*>(gpu_context_.get());
+// CORRECTED: Added 'const' to match the declaration in the header file.
+IGpuContext* AndroidPlatformBackend::get_gpu_context() const {
+    return gpu_context_.get();
 }
 
-// CORRECTED: The return type must be explicitly cast to the base class pointer.
-INpuContext* AndroidPlatformBackend::get_npu_context() {
-    return static_cast<INpuContext*>(npu_context_.get());
+// CORRECTED: Added 'const'
+INpuContext* AndroidPlatformBackend::get_npu_context() const {
+    return npu_context_.get();
 }
 
-// CORRECTED: The return type must be explicitly cast to the base class pointer.
-IPlatformMemory* AndroidPlatformBackend::get_cpu_allocator() {
-    return static_cast<IPlatformMemory*>(cpu_allocator_.get());
+// CORRECTED: Return type is IMemoryAllocator* and the function is const.
+IMemoryAllocator* AndroidPlatformBackend::get_cpu_allocator() const {
+    return cpu_allocator_.get();
 }
 
 }
