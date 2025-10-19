@@ -35,9 +35,7 @@ ConversationHandle InferencePipeline::create_new_context() {
     const size_t layer_count = config.model_header.layer_count;
     state->kv_cache.reserve(layer_count);
     for (size_t i = 0; i < layer_count; ++i) {
-        // FIX: Correct C++ syntax for initializing a struct's vector member.
         TensorShape kv_shape{{1, (int64_t)config.model_header.seq_len, (int64_t)config.model_header.kv_heads, (int64_t)config.model_header.head_size}};
-        
         DeviceType target_device = device_manager_.has_device(DeviceType::GPU) ? DeviceType::GPU : DeviceType::CPU;
         auto k_cache = tensor_manager_.create_tensor("k_cache_" + std::to_string(i), kv_shape, DataType::FP16, target_device);
         auto v_cache = tensor_manager_.create_tensor("v_cache_" + std::to_string(i), kv_shape, DataType::FP16, target_device);
@@ -52,7 +50,6 @@ void InferencePipeline::destroy_context(ConversationHandle handle) {
     conversation_contexts_.erase(handle.id);
 }
 
-// FIX: Return type is now std::unique_ptr<Tensor>
 std::unique_ptr<Tensor> InferencePipeline::execute(ConversationHandle handle, const std::vector<int>& input_token_ids) {
     if (!is_prepared_) { throw std::runtime_error("Cannot execute: pipeline is not prepared."); }
     
@@ -62,11 +59,7 @@ std::unique_ptr<Tensor> InferencePipeline::execute(ConversationHandle handle, co
     ConversationState* current_state = it->second.get();
     lock.unlock();
 
-    // Placeholder logic...
-    // FIX: Correct C++ syntax for initializing a struct's vector member.
     TensorShape output_shape{{1, (int64_t)input_token_ids.size()}};
-
-    // FIX: Correctly return the unique_ptr by moving it.
     return tensor_manager_.create_tensor("output_logits", output_shape, DataType::FP32, DeviceType::CPU);
 }
 
