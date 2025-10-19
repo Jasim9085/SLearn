@@ -51,6 +51,7 @@ file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 target_sources(t760_engine_core PRIVATE ${ENGINE_SOURCES})
 
 target_include_directories(t760_engine_core PUBLIC include)
+target_include_directories(t760_engine_core PUBLIC third_party/eigen)
 
 find_package(Threads REQUIRED)
 target_link_libraries(t760_engine_core PRIVATE Threads::Threads)
