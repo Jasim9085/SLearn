@@ -1,7 +1,7 @@
 #ifndef T760_VULKAN_PLATFORM_MEMORY_H
 #define T760_VULKAN_PLATFORM_MEMORY_H
 
-#include "t760_engine/platform/IPlatformMemory.h"
+#include "t760_engine/memory/IMemoryAllocator.h" // CORRECTED: Include the base class definition
 #include <vulkan/vulkan.h>
 
 // Forward-declare the VMA types to avoid including the VMA header in our public interface.
@@ -12,16 +12,14 @@ using VmaAllocation = VmaAllocation_T*;
 
 namespace t760 {
 
-class VulkanPlatformMemory : public IPlatformMemory {
+// CORRECTED: It inherits from IMemoryAllocator
+class VulkanPlatformMemory : public IMemoryAllocator {
 public:
     VulkanPlatformMemory(VkInstance instance, VkPhysicalDevice physical_device, VkDevice logical_device);
     ~VulkanPlatformMemory() override;
 
-    VulkanPlatformMemory(const VulkanPlatformMemory&) = delete;
-    VulkanPlatformMemory& operator=(const VulkanPlatformMemory&) = delete;
-
-    void initialize();
-    void shutdown();
+    void initialize() override;
+    void shutdown() override;
 
     std::unique_ptr<Buffer> allocate(size_t size, MemoryUsage usage) override;
 
@@ -34,6 +32,6 @@ private:
     VmaAllocator vma_allocator_ = nullptr;
 };
 
-}
+} // namespace t760
 
 #endif // T760_VULKAN_PLATFORM_MEMORY_H
