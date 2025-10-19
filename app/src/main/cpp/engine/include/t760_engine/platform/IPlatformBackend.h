@@ -16,7 +16,6 @@ public:
     virtual void initialize(const DeviceManager& device_manager) = 0;
     virtual void shutdown() = 0;
 
-    // FIX: All getter methods are now const
     virtual IGpuContext* get_gpu_context() const = 0;
     virtual INpuContext* get_npu_context() const = 0;
     virtual IPlatformMemory* get_cpu_allocator() const = 0;
