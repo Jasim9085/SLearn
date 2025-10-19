@@ -6,13 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(third_party/eigen)
 
-# --- Shader Compilation Setup (THE FINAL SYNTAX FIX) ---
-set(GLSLC_COMPILER "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/glslc")
+# --- Shader Compilation Setup (THE FINAL, CORRECT PATH) ---
+# Construct the absolute path to the glslc compiler inside the NDK's shader-tools directory.
+set(GLSLC_COMPILER "${ANDROID_NDK}/shader-tools/glslc")
 
-# We now check if the file at that specific path exists and is an executable.
-# This uses the correct, verbose CMake syntax for the conditional check.
+# Check if the file at that specific path exists and is an executable.
 if(NOT EXISTS ${GLSLC_COMPILER})
-    message(FATAL_ERROR "glslc compiler not found at the expected path: ${GLSLC_COMPILER}. Check NDK integrity.")
+    message(FATAL_ERROR "glslc compiler not found at the expected path: ${GLSLC_COMPILER}. This path is for NDK r26+. Please check NDK integrity.")
 endif()
 if(NOT IS_EXECUTABLE ${GLSLC_COMPILER})
      message(FATAL_ERROR "glslc compiler found but is not an executable: ${GLSLC_COMPILER}.")
