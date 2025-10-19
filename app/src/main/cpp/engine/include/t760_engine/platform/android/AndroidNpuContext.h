@@ -1,10 +1,19 @@
 #ifndef T760_ANDROID_NPU_CONTEXT_H
 #define T760_ANDROID_NPU_CONTEXT_H
 
+#include <memory>
+
+// Ensure these are included **after** <memory> for safety.
 #include "t760_engine/platform/INpuContext.h"
 #include "t760_engine/platform/IPlatformMemory.h"
+
+// Add this forward declaration and include guard in case AndroidNpuMemory.h
+// isn't properly included or circularly depends on this header.
+namespace t760 {
+    class AndroidNpuMemory;
+}
+
 #include "t760_engine/platform/android/AndroidNpuMemory.h"
-#include <memory>
 
 namespace t760 {
 
@@ -31,6 +40,6 @@ private:
     // that are built when the engine's model is loaded.
 };
 
-}
+}  // namespace t760
 
-#endif // T760_ANDROID_NPU_CONTEXT_H
+#endif  // T760_ANDROID_NPU_CONTEXT_H
