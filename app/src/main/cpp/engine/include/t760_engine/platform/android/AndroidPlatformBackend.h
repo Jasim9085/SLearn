@@ -5,6 +5,7 @@
 #include "t760_engine/platform/android/AndroidGpuContext.h"
 #include "t760_engine/platform/android/AndroidNpuContext.h"
 #include "t760_engine/memory/CpuAllocator.h"
+#include <memory>
 
 namespace t760 {
 
@@ -13,15 +14,13 @@ public:
     AndroidPlatformBackend();
     ~AndroidPlatformBackend() override;
 
-    AndroidPlatformBackend(const AndroidPlatformBackend&) = delete;
-    AndroidPlatformBackend& operator=(const AndroidPlatformBackend&) = delete;
-
     void initialize(const DeviceManager& device_manager) override;
     void shutdown() override;
 
-    IGpuContext* get_gpu_context() override;
-    INpuContext* get_npu_context() override;
-    IPlatformMemory* get_cpu_allocator() override;
+    // FIX: All getter methods are now const
+    IGpuContext* get_gpu_context() const override;
+    INpuContext* get_npu_context() const override;
+    IPlatformMemory* get_cpu_allocator() const override;
 
 private:
     bool is_initialized_ = false;
