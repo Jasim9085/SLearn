@@ -2,7 +2,7 @@
 #define T760_ANDROID_NPU_CONTEXT_H
 
 #include "t760_engine/platform/INpuContext.h"
-#include "t760_engine/memory/IPlatformMemory.h"
+#include "t760_engine/platform/IPlatformMemory.h"
 #include "t760_engine/platform/android/AndroidNpuMemory.h"
 #include <memory>
 
