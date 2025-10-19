@@ -3,7 +3,7 @@
 
 #include "t760_engine/platform/IGpuContext.h"
 #include "t760_engine/platform/INpuContext.h"
-#include "t760_engine/platform/IPlatformMemory.h"
+#include "t760_engine/memory/IMemoryAllocator.h" // CORRECTED: Use the single, correct interface
 #include "t760_engine/device/DeviceManager.h"
 #include <memory>
 
@@ -18,7 +18,7 @@ public:
 
     virtual IGpuContext* get_gpu_context() const = 0;
     virtual INpuContext* get_npu_context() const = 0;
-    virtual IPlatformMemory* get_cpu_allocator() const = 0;
+    virtual IMemoryAllocator* get_cpu_allocator() const = 0;
 };
 
 }
