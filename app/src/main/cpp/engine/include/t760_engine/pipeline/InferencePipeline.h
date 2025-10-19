@@ -26,8 +26,6 @@ public:
     void release();
     ConversationHandle create_new_context();
     void destroy_context(ConversationHandle handle);
-
-    // FIX: Return type is now std::unique_ptr<Tensor>
     std::unique_ptr<Tensor> execute(ConversationHandle handle, const std::vector<int>& input_token_ids);
 
 private:
