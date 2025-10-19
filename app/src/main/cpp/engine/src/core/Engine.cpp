@@ -11,10 +11,18 @@
 namespace t760 {
 
 Engine::Engine() = default;
-Engine::~Engine() { if (state_ != EngineState::SHUTDOWN && state_ != EngineState::UNINITIALIZED) { shutdown(); } }
+
+Engine::~Engine() {
+    if (state_ != EngineState::SHUTDOWN && state_ != EngineState::UNINITIALIZED) {
+        shutdown();
+    }
+}
 
 void Engine::initialize(const EngineConfig& config) {
-    if (state_ != EngineState::UNINITIALIZED) { throw std::runtime_error("Engine is already initialized."); }
+    if (state_ != EngineState::UNINITIALIZED) {
+        throw std::runtime_error("Engine is already initialized or in an invalid state.");
+    }
+
     try {
         device_manager_ = std::make_unique<DeviceManager>();
         device_manager_->initialize(config.devices);
@@ -24,22 +32,33 @@ void Engine::initialize(const EngineConfig& config) {
         model_loader_ = std::make_unique<ModelLoader>(*tensor_manager_);
         inference_pipeline_ = std::make_unique<InferencePipeline>(*device_manager_, *tensor_manager_);
         state_ = EngineState::INITIALIZED;
-    } catch (const std::exception& e) { state_ = EngineState::ERROR_STATE; shutdown(); throw; }
+    } catch (const std::exception& e) {
+        state_ = EngineState::ERROR_STATE;
+        shutdown();
+        throw;
+    }
 }
 
 void Engine::shutdown() {
-    if (state_ == EngineState::UNINITIALIZED || state_ == EngineState::SHUTDOWN) { return; }
+    if (state_ == EngineState::UNINITIALIZED || state_ == EngineState::SHUTDOWN) {
+        return;
+    }
     unload_model();
     inference_pipeline_.reset();
     model_loader_.reset();
     tensor_manager_.reset();
-    if (platform_backend_) { platform_backend_->shutdown(); platform_backend_.reset(); }
+    if (platform_backend_) {
+        platform_backend_->shutdown();
+        platform_backend_.reset();
+    }
     device_manager_.reset();
     state_ = EngineState::SHUTDOWN;
 }
 
 bool Engine::load_model(const std::string& model_path) {
-    if (state_ != EngineState::INITIALIZED) { throw std::runtime_error("Engine must be in INITIALIZED state."); }
+    if (state_ != EngineState::INITIALIZED) {
+        throw std::runtime_error("Engine must be in INITIALIZED state to load a model.");
+    }
     bool success = model_loader_->load_model(model_path);
     if (success) {
         inference_pipeline_->prepare(*model_loader_->get_model());
@@ -57,7 +76,9 @@ void Engine::unload_model() {
 }
 
 ConversationHandle Engine::start_new_conversation() {
-    if (state_ != EngineState::MODEL_LOADED && state_ != EngineState::INFERENCE_ACTIVE) { throw std::runtime_error("A model must be loaded."); }
+    if (state_ != EngineState::MODEL_LOADED && state_ != EngineState::INFERENCE_ACTIVE) {
+        throw std::runtime_error("A model must be loaded to start a conversation.");
+    }
     return inference_pipeline_->create_new_context();
 }
 
@@ -67,17 +88,23 @@ void Engine::end_conversation(ConversationHandle handle) {
     }
 }
 
-// FIX: Return type is now std::unique_ptr<Tensor>
 std::unique_ptr<Tensor> Engine::generate(ConversationHandle handle, const std::vector<int>& input_token_ids) {
-    if (state_ != EngineState::MODEL_LOADED && state_ != EngineState::INFERENCE_ACTIVE) { throw std::runtime_error("Engine must be in MODEL_LOADED state."); }
+    if (state_ != EngineState::MODEL_LOADED && state_ != EngineState::INFERENCE_ACTIVE) {
+        throw std::runtime_error("Engine must be in MODEL_LOADED state for inference.");
+    }
     EngineState previous_state = state_;
     state_ = EngineState::INFERENCE_ACTIVE;
-    auto result = inference_pipeline_->execute(handle, input_token_ids); // Correctly moves the unique_ptr
+    auto result = inference_pipeline_->execute(handle, input_token_ids);
     state_ = previous_state;
     return result;
 }
 
-EngineState Engine::get_state() const { return state_; }
-bool Engine::is_model_loaded() const { return state_ == EngineState::MODEL_LOADED || state_ == EngineState::INFERENCE_ACTIVE; }
+EngineState Engine::get_state() const {
+    return state_;
+}
+
+bool Engine::is_model_loaded() const {
+    return state_ == EngineState::MODEL_LOADED || state_ == EngineState::INFERENCE_ACTIVE;
+}
 
 }
