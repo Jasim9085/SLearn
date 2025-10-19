@@ -29,10 +29,7 @@ public:
     void unload_model();
     ConversationHandle start_new_conversation();
     void end_conversation(ConversationHandle handle);
-
-    // FIX: Return type is now std::unique_ptr<Tensor> to handle ownership correctly.
     std::unique_ptr<Tensor> generate(ConversationHandle handle, const std::vector<int>& input_token_ids);
-
     EngineState get_state() const;
     bool is_model_loaded() const;
 
