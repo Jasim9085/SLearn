@@ -6,11 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(third_party/eigen)
 
-# --- Shader Compilation Setup (Resilient Method) ---
-# First, try to get the path from the environment variable set by the CI.
+# --- Shader Compilation Setup ---
 set(GLSLC_COMPILER "$ENV{GLSLC_PATH}")
 
-# If the environment variable is not set (e.g., local build), fall back to searching.
 if(NOT GLSLC_COMPILER)
     find_program(GLSLC_COMPILER_FOUND
         glslc
@@ -21,7 +19,6 @@ if(NOT GLSLC_COMPILER)
     endif()
 endif()
 
-# Final check. If we still don't have a compiler, fail loudly.
 if(NOT GLSLC_COMPILER OR NOT EXISTS ${GLSLC_COMPILER})
     message(FATAL_ERROR "glslc compiler not found. Ensure GLSL_PATH env var is set or NDK is correct.")
 endif()
@@ -49,22 +46,27 @@ endforeach()
 # --- Define the Engine Core Library ---
 add_library(t760_engine_core STATIC)
 add_dependencies(t760_engine_core Shaders)
+
 file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 target_sources(t760_engine_core PRIVATE ${ENGINE_SOURCES})
+
 target_include_directories(t760_engine_core PUBLIC include)
+
 find_package(Threads REQUIRED)
 target_link_libraries(t760_engine_core PRIVATE Threads::Threads)
 
 
-# --- ANDROID NDK SPECIFIC SECTION ---
+# --- ANDROID NDK SPECIFIC SECTION (CORRECTED) ---
 if(ANDROID)
-    find_library(log-lib log)
-    find_library(android-lib android)
-    find_library(nativewindow-lib nativewindow)
-    find_library(vulkan-lib vulkan)
-    find_library(neuralnetworks-lib neuralnetworks)
+    # We link directly against the library names. The find_library() calls are
+    # unnecessary and were the source of the error. The Android NDK toolchain
+    # automatically finds these standard libraries.
     target_link_libraries(t760_engine_core PRIVATE
-        ${log-lib} ${android-lib} ${nativewindow-lib} ${vulkan-lib} ${neuralnetworks-lib}
+        log
+        android
+        nativewindow
+        vulkan
+        neuralnetworks
     )
 endif()
 
