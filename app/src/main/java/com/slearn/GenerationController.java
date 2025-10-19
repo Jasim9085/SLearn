@@ -33,11 +33,12 @@ public class GenerationController {
         }
 
         // Find the End-of-Sequence token ID. This is crucial for stopping generation.
-        this.eosTokenId = vocab.getOrDefault("<eos>", -1); // Common for Gemma
-        if (this.eosTokenId == -1) {
-            // Fallback for other models
-            this.eosTokenId = vocab.getOrDefault("</s>", -1);
+        int foundEosId = vocab.getOrDefault("<eos>", -1); // Common for Gemma
+        if (foundEosId == -1) {
+            // Fallback for other models if "<eos>" is not found.
+            foundEosId = vocab.getOrDefault("</s>", -1);
         }
+        this.eosTokenId = foundEosId;
     }
 
     private JSONObject loadJsonFromAssets(Context context, String fileName) throws IOException, JSONException {
