@@ -72,16 +72,19 @@ void AndroidPlatformBackend::shutdown() {
     std::cout << "AndroidPlatformBackend shut down." << std::endl;
 }
 
-IGpuContext* AndroidPlatformBackend::get_gpu_context() const {
-    return gpu_context_.get();
+// CORRECTED: The return type must be explicitly cast to the base class pointer.
+IGpuContext* AndroidPlatformBackend::get_gpu_context() {
+    return static_cast<IGpuContext*>(gpu_context_.get());
 }
 
-INpuContext* AndroidPlatformBackend::get_npu_context() const {
-    return npu_context_.get();
+// CORRECTED: The return type must be explicitly cast to the base class pointer.
+INpuContext* AndroidPlatformBackend::get_npu_context() {
+    return static_cast<INpuContext*>(npu_context_.get());
 }
 
-IPlatformMemory* AndroidPlatformBackend::get_cpu_allocator() const {
-    return cpu_allocator_.get();
+// CORRECTED: The return type must be explicitly cast to the base class pointer.
+IPlatformMemory* AndroidPlatformBackend::get_cpu_allocator() {
+    return static_cast<IPlatformMemory*>(cpu_allocator_.get());
 }
 
 }
