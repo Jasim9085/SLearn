@@ -6,18 +6,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(third_party/eigen)
 
-# --- Shader Compilation Setup (CORRECTED) ---
-# Find the glslc compiler.
-# We now provide a HINT for where to find it, directly inside the NDK toolchain.
-# The ANDROID_NDK variable is automatically set by the Android Gradle Plugin.
-find_program(GLSLC_COMPILER
-    glslc
-    HINTS ${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin
-)
+# --- Shader Compilation Setup (THE FINAL FIX) ---
+# Instead of searching, we construct the absolute path to the glslc compiler.
+# The ANDROID_NDK variable is guaranteed to be set by the Android Gradle Plugin.
+set(GLSLC_COMPILER "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/glslc")
 
-if(NOT GLSLC_COMPILER)
-    message(FATAL_ERROR "glslc compiler not found within the NDK. Please check NDK installation.")
+# We now check if the file at that specific path exists and is an executable.
+if(NOT EXISTS ${GLSLC_COMPILER} OR NOT IS_EXECUTABLE ${GLSLC_COMPILER})
+    message(FATAL_ERROR "glslc compiler not found at the expected path: ${GLSLC_COMPILER}. Check NDK integrity.")
 endif()
+
+message(STATUS "Found glslc compiler: ${GLSLC_COMPILER}")
 
 add_custom_target(Shaders)
 
