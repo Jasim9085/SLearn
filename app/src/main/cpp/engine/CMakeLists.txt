@@ -3,7 +3,7 @@ project(T760_Engine CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+add_library(t760_engine_core STATIC)
 target_include_directories(t760_engine_core
     PUBLIC
         include
@@ -49,7 +49,7 @@ endforeach()
 
 
 # --- Define the Engine Core Library ---
-add_library(t760_engine_core STATIC)
+
 add_dependencies(t760_engine_core Shaders)
 
 file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
