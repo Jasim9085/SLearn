@@ -2,31 +2,45 @@ name: Android CI Build From Source
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "min" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "min" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checks out your repository source code.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: 0
 
-      # Step 2: Set up the Java Development Kit (JDK).
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
       
-      # Step 3: OVERWRITE ALL GRADLE FILES with the final, correct configuration.
-      # Gradle's ndkVersion property will now manage the NDK entirely.
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+          add-to-path: true
+
+      # NEW CRITICAL STEP: Find the exact path to glslc and export it as an environment variable.
+      - name: Find glslc and export path
+        id: find_glslc
+        run: |
+          GLSLC_PATH=$(find $ANDROID_NDK_HOME -name glslc -type f -executable)
+          if [ -z "$GLSLC_PATH" ]; then
+            echo "::error::glslc not found within the NDK directory!"
+            exit 1
+          fi
+          echo "Found glslc at: $GLSLC_PATH"
+          echo "GLSLC_PATH=$GLSLC_PATH" >> $GITHUB_ENV
+
       - name: Create/Overwrite All Gradle Build Files
         run: |
           # Create root settings.gradle
@@ -34,17 +48,13 @@ jobs:
           echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
           echo "rootProject.name = 'SLearn'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
-
           # Create root build.gradle
           echo "plugins { id 'com.android.application' version '8.2.0' apply false }" > build.gradle
-
-          # CRITICAL: Overwrite the app/build.gradle with a version that
-          # FORCES Gradle to download and use the correct NDK version (r26+).
+          # Overwrite app/build.gradle
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
           }
-
           android {
               namespace 'com.slearn'
               compileSdk 34
@@ -56,26 +66,22 @@ jobs:
                   versionCode 1
                   versionName "1.0"
                   testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-                  
                   externalNativeBuild {
                       cmake {
                           cppFlags '-std=c++17', '-frtti', '-fexceptions'
                       }
                   }
               }
-
               buildTypes {
                   release {
                       minifyEnabled false
                       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
                   }
               }
-              
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_1_8
                   targetCompatibility JavaVersion.VERSION_1_8
               }
-
               externalNativeBuild {
                   cmake {
                       path 'src/main/cpp/engine/CMakeLists.txt'
@@ -83,7 +89,6 @@ jobs:
                   }
               }
           }
-
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
               implementation 'com.google.android.material:material:1.12.0'
@@ -94,26 +99,20 @@ jobs:
           }
           EOF
 
-      # Step 4: Install a specific version of Gradle to create the wrapper.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.7'
 
-      # Step 5: Generate the Gradle Wrapper scripts (gradlew).
       - name: Generate Gradle Wrapper
         run: gradle wrapper
 
-      # Step 6: Grant execute permission to the now-existing Gradle wrapper.
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Step 7: Build the application using the generated wrapper.
-      # Gradle will now automatically download NDK r26 and CMake will find glslc.
       - name: Build with Gradle Wrapper
         run: ./gradlew :app:assembleDebug
 
-      # Step 8: Upload the final build artifact.
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
