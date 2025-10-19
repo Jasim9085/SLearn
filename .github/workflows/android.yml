@@ -2,9 +2,9 @@ name: Android CI Build From Source
 
 on:
   push:
-    branches: [ "man" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "man" ]
+    branches: [ "main" ]
 
 jobs:
   build:
